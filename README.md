@@ -24,7 +24,7 @@ Each Claude Code window tracks its own tokens independently — open multiple wi
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-token-bar/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bhosler/claude-context-token-tracker/main/install.sh | bash
 ```
 
 Then restart Claude Code.
