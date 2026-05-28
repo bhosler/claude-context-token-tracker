@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Token data files — never commit actual session data
+token-usage.json
+token-sessions/
+*.jsonl
+
+# Editor
+.vscode/
+.idea/
+
+# Local config overrides
+settings.json
+.env
