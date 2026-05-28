@@ -24,10 +24,15 @@ Each Claude Code window tracks its own tokens independently — open multiple wi
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bhosler/claude-context-token-tracker/main/install.sh | bash
+python3 -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/bhosler/claude-context-token-tracker/main/install.sh').read().decode())"
 ```
 
 Then restart Claude Code.
+
+> **If you prefer curl** (requires a modern curl — Homebrew curl recommended on macOS):
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/bhosler/claude-context-token-tracker/main/install.sh | bash
+> ```
 
 ---
 
