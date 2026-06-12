@@ -8,7 +8,7 @@ A token usage display and context window progress bar for the [Claude Code](http
 ```
 
 **Line 1** — cumulative session token counts  
-**Line 2** — visual context window bar (200k = full)
+**Line 2** — visual context window bar (scales to active model: 1M for Sonnet/Opus/Fable, 200K for Haiku)
 
 | Character | Meaning |
 |-----------|---------|
