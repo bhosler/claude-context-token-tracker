@@ -54,27 +54,30 @@ if not session_uuid:
 
 # ── Detect active model from transcript ───────────────────────────────────
 CTX_MAX = DEFAULT_CTX
-if session_uuid:
-    projects_base = Path.home() / '.claude' / 'projects'
-    for proj_dir in projects_base.iterdir():
-        transcript = proj_dir / f"{session_uuid}.jsonl"
-        if transcript.exists():
-            last_model = None
-            with open(transcript) as tf:
-                for line in tf:
-                    try:
-                        entry = json.loads(line.strip())
-                        m = entry.get('message', {}).get('model')
-                        if m:
-                            last_model = m
-                    except Exception:
-                        pass
-            if last_model:
-                for prefix, ctx in MODEL_CTX.items():
-                    if last_model.startswith(prefix):
-                        CTX_MAX = ctx
-                        break
-            break
+try:
+    if session_uuid:
+        projects_base = Path.home() / '.claude' / 'projects'
+        for proj_dir in projects_base.iterdir():
+            transcript = proj_dir / f"{session_uuid}.jsonl"
+            if transcript.exists():
+                last_model = None
+                with open(transcript) as tf:
+                    for line in tf:
+                        try:
+                            entry = json.loads(line.strip())
+                            m = entry.get('message', {}).get('model')
+                            if m:
+                                last_model = m
+                        except Exception:
+                            pass
+                if last_model:
+                    for prefix, ctx in MODEL_CTX.items():
+                        if last_model.startswith(prefix):
+                            CTX_MAX = ctx
+                            break
+                break
+except Exception:
+    pass
 
 # Load token data
 token_file = (token_dir / f"{session_uuid}.json") if session_uuid else None

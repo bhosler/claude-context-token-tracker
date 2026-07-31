@@ -108,6 +108,7 @@ DEFAULT_CTX = 1_000_000
 def fmt(n):
     return f"{n/1000:.1f}k" if n >= 1000 else str(n)
 
+# ── Find session UUID by walking up process tree ───────────────────────────
 def get_ppid(pid):
     try:
         r = subprocess.run(['ps', '-o', 'ppid=', '-p', str(pid)],
@@ -116,9 +117,9 @@ def get_ppid(pid):
     except Exception:
         return None
 
-sessions_dir = Path.home() / '.claude' / 'sessions'
-token_dir    = Path.home() / '.claude' / 'token-sessions'
-session_uuid = None
+sessions_dir  = Path.home() / '.claude' / 'sessions'
+token_dir     = Path.home() / '.claude' / 'token-sessions'
+session_uuid  = None
 
 pid = os.getpid()
 for _ in range(6):
@@ -133,6 +134,7 @@ for _ in range(6):
             pass
         break
 
+# Fallback: newest token-session file matching cwd
 if not session_uuid:
     cwd = os.getcwd()
     for sf in sorted(sessions_dir.glob('*.json'), key=lambda x: x.stat().st_mtime, reverse=True):
@@ -146,28 +148,32 @@ if not session_uuid:
 
 # ── Detect active model from transcript ───────────────────────────────────
 CTX_MAX = DEFAULT_CTX
-if session_uuid:
-    projects_base = Path.home() / '.claude' / 'projects'
-    for proj_dir in projects_base.iterdir():
-        transcript = proj_dir / f"{session_uuid}.jsonl"
-        if transcript.exists():
-            last_model = None
-            with open(transcript) as tf:
-                for line in tf:
-                    try:
-                        entry = json.loads(line.strip())
-                        m = entry.get('message', {}).get('model')
-                        if m:
-                            last_model = m
-                    except Exception:
-                        pass
-            if last_model:
-                for prefix, ctx in MODEL_CTX.items():
-                    if last_model.startswith(prefix):
-                        CTX_MAX = ctx
-                        break
-            break
+try:
+    if session_uuid:
+        projects_base = Path.home() / '.claude' / 'projects'
+        for proj_dir in projects_base.iterdir():
+            transcript = proj_dir / f"{session_uuid}.jsonl"
+            if transcript.exists():
+                last_model = None
+                with open(transcript) as tf:
+                    for line in tf:
+                        try:
+                            entry = json.loads(line.strip())
+                            m = entry.get('message', {}).get('model')
+                            if m:
+                                last_model = m
+                        except Exception:
+                            pass
+                if last_model:
+                    for prefix, ctx in MODEL_CTX.items():
+                        if last_model.startswith(prefix):
+                            CTX_MAX = ctx
+                            break
+                break
+except Exception:
+    pass
 
+# Load token data
 token_file = (token_dir / f"{session_uuid}.json") if session_uuid else None
 if token_file and token_file.exists():
     d = json.loads(token_file.read_text())
@@ -177,15 +183,18 @@ else:
     print("tokens: --\n[" + "░" * BAR_WIDTH + "] 0%")
     exit()
 
+# ── Token stats line ───────────────────────────────────────────────────────
 inp   = d.get('input_tokens', 0)
 out   = d.get('output_tokens', 0)
 cache = d.get('cache_read', 0)
 turns = d.get('turns', 0)
+
 parts = [f"↑{fmt(inp)}", f"↓{fmt(out)}"]
 if cache > 0:
     parts.append(f"⚡{fmt(cache)}")
 parts.append(f"({turns}t)")
 
+# ── Context bar ────────────────────────────────────────────────────────────
 cache_read     = d.get('last_cache_read', 0)
 cache_creation = d.get('last_cache_creation', 0)
 fresh_input    = d.get('last_input', 0)
@@ -195,11 +204,12 @@ pct            = min(total_used / CTX_MAX * 100, 100)
 def alloc(val):
     return max(1, round(val / CTX_MAX * BAR_WIDTH)) if val > 0 else 0
 
-c1   = alloc(cache_read)
-c2   = alloc(cache_creation)
-c3   = alloc(fresh_input)
+c1   = alloc(cache_read)      # █ cached context
+c2   = alloc(cache_creation)  # ▓ cache writes
+c3   = alloc(fresh_input)     # ▒ fresh input
 free = max(0, BAR_WIDTH - c1 - c2 - c3)
-bar  = '█' * c1 + '▓' * c2 + '▒' * c3 + '░' * free
+
+bar = '█' * c1 + '▓' * c2 + '▒' * c3 + '░' * free
 
 print(" ".join(parts))
 print(f"[{bar}] {pct:.0f}%")
